@@ -16,7 +16,7 @@ setuptools.setup(
     entry_points = {
         "console_scripts": ['rainradar = py_apps.rainradar:main',
         'vpnController = py_apps.vpnControll:main',
-        'vpnController = py_apps.serialMqtt:main']
+        'serialBridge = py_apps.serialMqtt:main']
     },
     install_requires=[
 		'tornado', 
