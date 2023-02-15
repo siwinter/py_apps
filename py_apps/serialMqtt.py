@@ -10,7 +10,7 @@
 import sys
 import time
 import logging
-from systemd import journal
+#from systemd import journal
 import paho.mqtt.client as mqttClient
 import serial
 
