@@ -15,7 +15,7 @@ import aiomqtt
 mqttHost = "localhost"
 mqttTopics = ["cmd/#", "inf/#"]
 serialDev = '/dev/ttyUSB0'
-serBaudrate = 9600
+serBaudrate = 115200
 
 async def heartbeat(interval):
     while True:
@@ -32,7 +32,6 @@ async def readSerial(ser, mqtt):
                 txt = inBytes.decode()    # Converting Byte Strings into unicode strings
             except:
                 txt =""
-            print("rec: " + txt)
             if txt.find(">") != -1:        # -1 if not found
                 l = txt.split(">")
                 inTxt = l[len(l)-1]
@@ -41,15 +40,17 @@ async def readSerial(ser, mqtt):
                 if reading :
                     inTxt = inTxt + txt
             if inTxt.find("\n") != -1:
-                print("found eol")
-                print(inTxt)
                 reading = False
                 mqttList = inTxt.split("\n")[0].split(":")
+                inTxt = ""
                 try:
                     if len(mqttList) == 1:
-                        await mqtt.publish(mqttList[0])
+                        print("to publish Topic: %s", mqttList[0])
+#                        await mqtt.publish(mqttList[0])
+
                     elif len(mqttList) == 2:
-                        await mqtt.publish(mqttList[0], payload=mqttList[1])
+                        print("to publish Topic: %s : %s", mqttList[0], mqttList[1])
+#                        await mqtt.publish(mqttList[0], payload=mqttList[1])
                 except aiomqtt.MqttError as e: 
                     #logging.warning("MQTT error: %s", e)
                     pass
@@ -78,6 +79,7 @@ async def main():
     while noSerial:
         try:
             ser = serial.Serial(serialDev, serBaudrate, timeout=0)
+            ser. reset_output_buffer()
             noSerial = False
         except Exception as e:
             print("serial Error retry : \n %i", e)
