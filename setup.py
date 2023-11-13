@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/siwinter/py_apps",
     packages=["py_apps"],
     entry_points = {
-        "console_scripts": ['rainradar = py_apps.rainradar:main',
+        "console_scripts": ['rainradar = py_apps.rainRadar:main',
         'vpnController = py_apps.vpnControll:main',
         'serialBridge = py_apps.serialMqtt:main']
     },
