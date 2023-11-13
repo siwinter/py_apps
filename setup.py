@@ -19,8 +19,8 @@ setuptools.setup(
         'serialBridge = py_apps.serialMqtt:main']
     },
     install_requires=[
-	    	'aiohttp'
-	    	'aiomqtt'
+	    	'aiohttp',
+	    	'aiomqtt',
 		'tornado', 
 		'paho-mqtt',
 		'pyserial'
