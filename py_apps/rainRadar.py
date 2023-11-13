@@ -232,7 +232,7 @@ async def checkRainState():
 #-----------------------------------------------------------------------
 #  Main
 #-----------------------------------------------------------------------
-async def main():
+async def startApp():
     configApp()
     global mqttClient                               # start MQTT-Client
     mqttClient = aiomqtt.Client(mqttHost)
@@ -243,5 +243,8 @@ async def main():
     while True:                                     # run forever
         await asyncio.sleep(3600)
 
+def main():
+    asyncio.run(startApp())
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(main())
