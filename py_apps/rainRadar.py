@@ -13,19 +13,19 @@ from aiohttp import web
 #  Config
 #-----------------------------------------------------------------------
 # default
-logLev      = 'INFO'
 serverPort  = 8095
 mqttHost      = 'localhost'
 mqttPort    = 1883
 mqttTopic   = 'rainAlarm'
 logLevel    = logging.INFO
+#logLevel    = logging.DEBUG
 logFormat = ('[%(asctime)s] %(levelname)-8s %(message)s')
 logFile   = ""
 locationURI = '/deutschland/niederkruechten/kapelle/DE3205889.html'
 
 def configApp():
     config = configparser.ConfigParser()
-    global logLev, serverPort, mqttHost, mqttPort, mqttTopic, logLevel, logFile, locationURI
+    global serverPort, mqttHost, mqttPort, mqttTopic, logLevel, logFile, locationURI
     try:
         config.read(sys.argv[1])
     except :
@@ -95,7 +95,8 @@ async def mqttPublish():
     if rainState == 0: msg = "off"
     else: msg = "on"
     try:
-        await mqttClient.publish("inf/" + mqttTopic, payload = msg)        
+        await mqttClient.publish("inf/" + mqttTopic, payload = msg)
+        logging.info("MQTT published inf/" + mqttTopic + ":" + msg)
     except aiomqtt.MqttError as e: 
         logging.warning("MQTT error: %s", e)
 
@@ -166,6 +167,8 @@ async def checkRainState():
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
+                    logging.debug("HTTP-Get to : %" + url)
+                    logging.debug("HTTP-Response status : %s", response.status)
                     if (response.status == 200):
 # analyse webpage from www.wetter.com and
 # prepare dictionary {'hh:mm' : rainvalue, ...}
@@ -210,18 +213,18 @@ async def checkRainState():
                         global rainState
                         if (nextRain > 0) and (nextRain < 4): # next Rain within 15 mins
                             rainState = 1
-                            logging.info("rainAlarm ON (raining)")
+                            logging.debug("rainAlarm ON (raining)")
                             rainEndTime = time.time() + 15*60 
                         elif rainEndTime > time.time(): # rained at least 15 mins ago
                             rainState = 2
-                            logging.info("rainAlarm ON (has rained)")
+                            logging.debug("rainAlarm ON (has rained)")
                         elif rainAlarm and nextRain > 0: # rainalarm on will rain within 60 mins again
                             rainState = 3
-                            logging.info("rainAlarm ON (will rain again)")
+                            logging.debug("rainAlarm ON (will rain again)")
                         else:
                             rainAlarm = False
                             rainState = 0
-                            logging.info("rainAlarm OFF (not raining)")
+                            logging.debug("rainAlarm OFF (not raining)")
                         await mqttPublish()
                     else:
                         logging.warning("No rain forecast : HTTP-Response status : %s", response.status)
