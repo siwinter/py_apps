@@ -211,7 +211,7 @@ async def checkRainState():
                             logging.warning("no rain forcast available")
 
                         global rainState
-                        if (nextRain > 0) and (nextRain < 4): # next Rain within 15 mins
+                        if (nextRain > -1) and (nextRain < 4): # next Rain within 15 mins
                             rainState = 1
                             logging.debug("rainAlarm ON (raining)")
                             rainEndTime = time.time() + 15*60 
