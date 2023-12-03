@@ -14,15 +14,15 @@ setuptools.setup(
     url="https://github.com/siwinter/py_apps",
     packages=["py_apps"],
     entry_points = {
-        "console_scripts": ['rainradar = py_apps.rainRadar:main',
+        "console_scripts": ['webInfo = py_apps.webInfo:main',
         'vpnController = py_apps.vpnControll:main',
         'serialBridge = py_apps.serialMqtt:main']
     },
     install_requires=[
 	    	'aiohttp',
 	    	'aiomqtt',
-		'tornado', 
-		'paho-mqtt',
+#		'tornado', 
+#		'paho-mqtt',
 		'pyserial'
 #		'systemd'
 		],
