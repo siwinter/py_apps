@@ -1,5 +1,23 @@
-
+#!/usr/bin/python3 -u
+# -*- coding: utf-8 -*-
+#
+#  webInfo.py
+#
+#  python3 webInfo.py <path to configfile>
+#
+#  Ursprünglich war das Skript nur dazu gemacht von der Webseite www.wetter.com Inforamtionen
+#  über die Regensituation an einem Ort zu holen.
+#  inziwschen holt es außerdem von www.clever-tanken.de die aktuellen Preise einer Tankstelle
+#  
+#   tele/<mqttTopic>/rainAlarm : on || off
+#   
+#   tele/<mqttTopic>/petrolPrices : {"Diesel":"1.66","Super_E10":"1.69",
+#                                    "Super_E5":"1.75","SuperPlus":"1.83"}
+#   
+#
+  
 import sys
+import re
 from pathlib import Path
 import time
 import logging
@@ -15,17 +33,22 @@ from aiohttp import web
 # default
 serverPort  = 8095
 mqttHost      = 'localhost'
+#mqttHost    = '192.168.10.10'
 mqttPort    = 1883
-mqttTopic   = 'rainAlarm'
+mqttTopic   = 'gths'
 logLevel    = logging.INFO
 #logLevel    = logging.DEBUG
 logFormat = ('[%(asctime)s] %(levelname)-8s %(message)s')
 logFile   = ""
-locationURI = '/deutschland/niederkruechten/kapelle/DE3205889.html'
+locationURI = ''
+#locationURI = '/deutschland/niederkruechten/kapelle/DE3205889.html'
+#locationURI = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
+petrolStationID = ''
+#petrolStationID = '56417'  # Globus Hattersheim
 
 def configApp():
     config = configparser.ConfigParser()
-    global serverPort, mqttHost, mqttPort, mqttTopic, logLevel, logFile, locationURI
+    global serverPort, mqttHost, mqttPort, mqttTopic, logLevel, logFile, locationURI, petrolStationID
     try:
         config.read(sys.argv[1])
     except :
@@ -72,6 +95,9 @@ def configApp():
         locationURI = config["LOCATION"]["uri"]
     except: pass
     try:
+        petrolStationID = config["LOCATION"]["petrolStation"]
+    except: pass
+    try:
         Path(logFile).resolve()
         logging.basicConfig(level=logLevel,
                             filename=logFile,
@@ -86,19 +112,35 @@ def configApp():
 #-----------------------------------------------------------------------
 rainState = 0
 
+priceList = {}
+
 #-----------------------------------------------------------------------
 #  MQTT
 #-----------------------------------------------------------------------
 mqttClient = None
 
-async def mqttPublish():
+async def publishRain():
     if rainState == 0: msg = "off"
     else: msg = "on"
+    topic = "tele/" + mqttTopic + "/rainAlarm"
     try:
-        await mqttClient.publish("inf/" + mqttTopic, payload = msg)
-        logging.info("MQTT published inf/" + mqttTopic + ":" + msg)
+        await mqttClient.publish(topic, payload = msg)
+        logging.debug("MQTT published: " + topic + ":" + msg)
     except aiomqtt.MqttError as e: 
         logging.warning("MQTT error: %s", e)
+
+async def publishPriceList():
+    payload =  "{"
+    for key in priceList:
+        payload = payload + "\"" + key + "\":\"" + priceList[key] + "\","
+    payload = payload[0:-1] +"}"
+    topic = "tele/" + mqttTopic + "/petrolPrices"
+    try:
+        await mqttClient.publish(topic, payload)
+        logging.debug("MQTT published: " + topic + ":" + payload)
+    except aiomqtt.MqttError as e: 
+        logging.warning("MQTT error: %s", e)
+
 
 async def mqttReceive(client):
     while True:
@@ -107,13 +149,13 @@ async def mqttReceive(client):
 
                 logging.info("MQTT connected to %s : %i", mqttHost, mqttPort)
                 async with client.messages() as messages:
-                    subscribeTopic = "cmd/"+mqttTopic +"/#"
+                    subscribeTopic = "cmnd/"+mqttTopic +"/#"
                     await client.subscribe(subscribeTopic)
                     logging.info("MQTT subscribed: " + subscribeTopic)
                     async for message in messages:
                         logging.debug("MQTT-Msg received: %s", message.topic)
-                        if message.topic.matches("cmd/" + mqttTopic +"/get"):
-                            await mqttPublish()
+                        if message.topic.matches("cmd/" + mqttTopic +"/rainAlarm/get"):
+                            await publishRain()
         except aiomqtt.MqttError as e:
             logging.warning("MQTT not connected, Error: %s", e)
             await asyncio.sleep(5)
@@ -148,6 +190,8 @@ async def startHTTPServer():
 
 #-----------------------------------------------------------------------
 #  Web-Scrapper
+#-----------------------------------------------------------------------
+#  RainState
 #-----------------------------------------------------------------------
 async def checkRainState():
     rainEndTime = time.time() - 1
@@ -225,12 +269,44 @@ async def checkRainState():
                             rainAlarm = False
                             rainState = 0
                             logging.debug("rainAlarm OFF (not raining)")
-                        await mqttPublish()
+                        await publishRain()
                     else:
                         logging.warning("No rain forecast : HTTP-Response status : %s", response.status)
         except Exception as e: 
             logging.warning("No rain forecast : HTTP-Error: %s", e)
         await asyncio.sleep(5*60)
+#-----------------------------------------------------------------------
+#  PetrolPrice
+#-----------------------------------------------------------------------
+async def getPetrolPrices():
+    global priceList
+    priceList = {}
+    url = 'https://www.clever-tanken.de/tankstelle_details/' + petrolStationID
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    logging.debug("HTTP-Get to : %" + url)
+                    logging.debug("HTTP-Response status : %s", response.status)
+                    if (response.status == 200):
+# analyse webpage from www.clever-tanken.de
+                        txt = await response.text()
+                        fuels = re.findall('<div class="price-type-name">.*?</div>', txt)
+                        prices = re.findall('<span id="current-price-.*?</span>', txt)
+                        i = 0
+                        for f in fuels:
+                            price=prices[i][27:-7]
+                            fuelType= f[29:-6].replace(" ", "_")
+
+                            priceList[fuelType] = price
+                            i = i+1
+                        await publishPriceList()
+                    else:
+                        logging.warning("No petrol prices : HTTP-Response status : %s", response.status)
+        except Exception as e: 
+            logging.warning("No petrol prices : HTTP-Error: %s", e)
+        await asyncio.sleep(5*60)
+
 
 #-----------------------------------------------------------------------
 #  Main
@@ -240,9 +316,11 @@ async def startApp():
     global mqttClient                               # start MQTT-Client
     mqttClient = aiomqtt.Client(mqttHost)
     asyncio.create_task(mqttReceive(mqttClient))
-
     await startHTTPServer()                         # start HTTP-Server
-    asyncio.create_task(checkRainState())           # start Web-Scrapper
+    if len(locationURI) > 0 :
+        asyncio.create_task(checkRainState())       # start Web-Scrapper
+    if len(petrolStationID) >0 :
+        asyncio.create_task(getPetrolPrices())      # start Web-Scrapper
     while True:                                     # run forever
         await asyncio.sleep(3600)
 
