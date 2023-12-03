@@ -83,7 +83,7 @@ def configApp():
         serverPort = int(config["WEB-SERVER"]["port"])
     except: pass
     try:
-        mqttIP = config["MQTT"]["host"]
+        mqttHost = config["MQTT"]["host"]
     except: pass
     try:
         mqttPort = int(config["MQTT"]["port"])
@@ -106,6 +106,13 @@ def configApp():
         logging.basicConfig(level=logLevel,
                             format=logFormat,)
     logging.info("starting with config file %s", sys.argv[1])
+    logging.debug("logFile = " + logFile)
+    logging.debug("serverPort = " + str(serverPort))
+    logging.debug("mqttHost = " + mqttHost)
+    logging.debug("mqttPort = " + str(mqttPort))
+    logging.debug("mqttTopic = " + mqttTopic)
+    logging.debug("locationURI = " + locationURI)
+    logging.debug("petrolStationID = " + petrolStationID)
 
 #-----------------------------------------------------------------------
 #  Global Variables
@@ -145,9 +152,10 @@ async def publishPriceList():
 async def mqttReceive(client):
     while True:
         try:
+            logging.info("MQTT connecting to %s : %i", mqttHost, mqttPort)
             async with client:
 
-                logging.info("MQTT connected to %s : %i", mqttHost, mqttPort)
+                logging.info("MQTT connected")
                 async with client.messages() as messages:
                     subscribeTopic = "cmnd/"+mqttTopic +"/#"
                     await client.subscribe(subscribeTopic)
