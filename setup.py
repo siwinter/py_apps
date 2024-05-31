@@ -15,20 +15,31 @@ setuptools.setup(
     packages=["py_apps"],
     entry_points = {
         "console_scripts": ['webInfo = py_apps.webInfo:main',
-        'vpnController = py_apps.vpnControll:main',
-        'serialBridge = py_apps.serialMqtt:main']
+        'rainRadar = py_apps.rainradar:main',
+        'myApp = myApp:main',
+        'petrolPrice = py_apps.petrolPrice:main'
+        'vpnCtrl = py_apps.vpnCtrl:main',
+        'serialBridge = py_apps.serial2mqtt:main']
     },
     install_requires=[
 	    	'aiohttp',
 	    	'aiomqtt',
-#		'tornado', 
-#		'paho-mqtt',
-		'pyserial'
-#		'systemd'
-		],
+            'aioserial',
+            'aiosignal',
+            'attrs',
+            'frozenlist',
+            'future',
+            'idna',
+            'iso8601',
+            'multidict',
+    		'paho-mqtt',
+	    	'pyserial',
+            'PyYAML',
+            'serial',
+            'yarl'],
+
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-    ],
+        "Operating System :: OS Independent" ]
 )
