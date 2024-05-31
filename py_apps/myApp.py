@@ -17,13 +17,14 @@ logging.basicConfig(
 #    handlers=[journal.JournaldLogHandler()],
     format=logFormat)
 
-broker = "192.168.10.10"
+#broker = "192.168.10.10"
+broker = "localhost"
 rainLocation = ''
 #rainLocation = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
 petrolStationID = ''
 #petrolStationID = '56417'  # Globus Hattersheim
-serialTopic =""
-#serialTopic ="cmnd/radio/#"
+#serialTopic =""
+serialTopic ="cmnd/radio/#"
 
 async def sendTest(txt) :
     print("Test :" + txt)
