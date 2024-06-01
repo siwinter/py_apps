@@ -7,21 +7,17 @@ name = "my_apps"
 version = "0.0.1"
 dependencies = [
     "asyncio",
-#    'importlib-metadata; python_version<"3.10"',
 	'aiohttp',
 	'aiomqtt',
     'aioserial',
     'aiosignal',
     'attrs',
     'frozenlist',
-#    'future',
     'idna',
-#    'iso8601',
     'multidict',
     'paho-mqtt',
 	'pyserial',
-#    'PyYAML',
-#    'serial',
+    'systemd',
     'yarl'
 ]
 
