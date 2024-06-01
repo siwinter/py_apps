@@ -3,23 +3,13 @@ import aiohttp
 import re
 import logging
 
-
-#logLevel = logging.DEBUG
-#logFile = 'myApp.log'
-#logFormat = ('[%(asctime)s] %(levelname)-8s %(filename)-12s %(message)s')
-
-#logger = logging.getLogger(__name__)
-#logging.basicConfig(
-#    filename=logFile,
-#    level=logLevel,
-#    handlers=[journal.JournaldLogHandler()],
-#    format=logFormat)
+logger = logging.getLogger(__name__)
 
 async def publish(queue):
     while True:
         message = await queue.get()
         print("publishing : " + message)
-        logging.info("publishing: " + message)
+        logger.info("publishing: " + message)
 
 priceList = {}
 async def getPrices(stationID):
@@ -29,8 +19,8 @@ async def getPrices(stationID):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
-                logging.debug("HTTP-Get to : %" + url)
-                logging.debug("HTTP-Response status : %s", response.status)
+                logger.debug("HTTP-Get to : %" + url)
+                logger.debug("HTTP-Response status : %s", response.status)
                 if (response.status == 200):
 # analyse webpage from www.clever-tanken.de
                     txt = await response.text()
@@ -44,14 +34,14 @@ async def getPrices(stationID):
                         priceList[fuelType] = price
                         i = i+1
                 else:
-                    logging.warning("No petrol prices : HTTP-Response status : %s", response.status)
+                    logger.warning("No petrol prices : HTTP-Response status : %s", response.status)
     except Exception as e: 
-        logging.warning("No petrol prices : HTTP-Error: %s", e)
+        logger.warning("No petrol prices : HTTP-Error: %s", e)
         priceList = {}
     return priceList
 
 async def startSensor(stationID, queue, interval) :
-    logging.info("Sensor started")
+    logger.info("Sensor started")
     while True :
         priceList = await getPrices(stationID)
         payload =  "{"
@@ -61,7 +51,7 @@ async def startSensor(stationID, queue, interval) :
         try: 
             queue.put_nowait("tele/petrolPrices:" + payload)
         except Exception as e:
-            logging.warning("Queue Error %s", e)
+            logger.warning("Queue Error %s", e)
         await asyncio.sleep(interval * 60)
 
 petrolStationID = '56417'  # Globus Hattersheim

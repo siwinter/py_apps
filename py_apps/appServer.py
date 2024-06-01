@@ -8,11 +8,12 @@ import asyncio
 import aiomqtt
 import logging
 
-logLevel = logging.DEBUG
-logFile = 'myApp.log'
+
+logger = logging.getLogger(__name__)
+logLevel = logging.INFO
+#logFile = 'myApp.log'
 logFormat = ('[%(asctime)s] %(levelname)-8s %(filename)-12s %(message)s')
 
-#logger = logging.getLogger(__name__)
 logging.basicConfig(
 #    filename=logFile,
     level=logLevel,
@@ -25,26 +26,27 @@ broker = "192.168.10.10"
 rainLocation = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
 #petrolStationID = ''
 petrolStationID = '56417'  # Globus Hattersheim
-serialTopic =""
-#serialTopic ="cmnd/radio/#"
+#serialTopic =""
+serialTopic ="cmnd/radio/#"
 
 async def distributeMqtt(mClient) :
-    logging.info("distributing MQTT")
+    logger.info("distributing MQTT")
     async for message in mClient.messages:
         for key in subscriptions :
             if message.topic.matches(key):
                 await subscriptions[key](str(message.topic) + ":" + str(message.payload))
 
 async def publishMqtt(queue,mClient) :
-    logging.info("publishing MQTT")
+    logger.info("publishing MQTT")
     while True:
         msg = await queue.get()
-        m = msg.split(":", 1) 
-        await mClient.publish(m[0], payload=m[1])
-        logging.debug("publishing: " + msg)
+        logger.debug("publishing: " + msg)
+        m = msg.split(":", 1)
+        if len(m) == 2 : await mClient.publish(m[0], payload=m[1])
+        else : await mClient.publish(msg)
 
 async def publishPrnt(queue) :              # for test purpose
-    logging.info("publishing print")
+    logger.info("publishing print")
     while True:
         print("publish: " + await queue.get())
 

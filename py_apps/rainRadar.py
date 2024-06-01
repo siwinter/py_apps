@@ -3,22 +3,13 @@ import aiohttp
 import time
 import logging
 
-#logLevel = logging.DEBUG
-#logFile = 'myApp.log'
-#logFormat = ('[%(asctime)s] %(levelname)-8s %(filename)-12s %(message)s')
-
-#logger = logging.getLogger(__name__)
-#logging.basicConfig(
-#    filename=logFile,
-#    level=logLevel,
-#    handlers=[journal.JournaldLogHandler()],
-#    format=logFormat)
+logger = logging.getLogger(__name__)
 
 async def publish(queue):
     while True:
         message = await queue.get()
         print("publishing: " + message)
-#        logging.info("publishing: " + message)
+#        logger.info("publishing: " + message)
 
 rainstate = 0
 
@@ -40,8 +31,8 @@ async def rainChecker(locationURI):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
-                logging.debug("HTTP-Get to : %" + url)
-                logging.debug("HTTP-Response status : %s", response.status)
+                logger.debug("HTTP-Get to : %" + url)
+                logger.debug("HTTP-Response status : %s", response.status)
                 if (response.status == 200):
 # analyse webpage from www.wetter.com and
 # prepare dictionary {'hh:mm' : rainvalue, ...}
@@ -63,7 +54,7 @@ async def rainChecker(locationURI):
                             rains[t]=r						# add new key:value (exp: "17:20" : 2)
                         else :
                             break
-                    logging.debug("expected rain: %s", rains)
+                    logger.debug("expected rain: %s", rains)
 # find next expected rain period (nextrain = -1 -> no rain expected)
                     timeKeys = []
                     now = (time.localtime().tm_hour *60) + (time.localtime().tm_min // 5 *5) #Anzahl der Minuten des Tages auf 5min gerundet
@@ -81,40 +72,40 @@ async def rainChecker(locationURI):
                                 nextRain = i        # next rain expected in i+5 minx
                                 break
                     if i==-1:
-                        logging.warning("no rain forcast available")
+                        logger.warning("no rain forcast available")
 
                     global rainState
                     if (nextRain > -1) and (nextRain < 4): # next Rain within 15 mins
                         rainState = 1
-                        logging.debug("rainAlarm ON (raining)")
+                        logger.debug("rainAlarm ON (raining)")
                         rainEndTime = time.time() + 15*60 
                     elif rainEndTime > time.time(): # rained at least 15 mins ago
                         rainState = 2
-                        logging.debug("rainAlarm ON (has rained)")
+                        logger.debug("rainAlarm ON (has rained)")
                     elif rainAlarm and nextRain > 0: # rainalarm on will rain within 60 mins again
                         rainState = 3
-                        logging.debug("rainAlarm ON (will rain again)")
+                        logger.debug("rainAlarm ON (will rain again)")
                     else:
                         rainAlarm = False
                         rainState = 0
-                        logging.debug("rainAlarm OFF (not raining)")
+                        logger.debug("rainAlarm OFF (not raining)")
                     if rainState == 0: return "off"
                     else: return "on"
                 else:
-                    logging.warning("No rain forecast : HTTP-Response status : %s", response.status)
+                    logger.warning("No rain forecast : HTTP-Response status : %s", response.status)
                     return "error"
     except Exception as e: 
-        logging.warning("No rain forecast : HTTP-Error: %s", e)
+        logger.warning("No rain forecast : HTTP-Error: %s", e)
         return "error"
 
 async def startSensor(location, queue, interval) :
-    logging.info("Sensor started")
+    logger.info("Sensor started")
     while True :
         msg = await rainChecker(location)
         try: 
             queue.put_nowait("tele/rainalarm:" + msg)
         except Exception as e:
-            logging.warning("Queue Error %s", e)
+            logger.warning("Queue Error %s", e)
         await asyncio.sleep(interval * 60)
 
 interval = 1

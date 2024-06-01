@@ -18,6 +18,8 @@ import asyncio
 import aiohttp
 import logging
 
+logger = logging.getLogger(__name__)
+
 country = "de"
 
 nstartCmds   = {
@@ -42,26 +44,26 @@ async def publish(queue):
     while True:
         message = await queue.get()
         print("publishing : " + message)
-        logging.info("publishing: " + message)
+        logger.info("publishing: " + message)
 
 async def setVPN(cmd,queue=None):
     newCountry = cmd.split(":", 1)[1]      # cmnd/vpn:us  --> us
     global country
-    logging.debug("setVPN to " + newCountry)
+    logger.debug("setVPN to " + newCountry)
     if newCountry in startCmds.keys() :
         for cmd in stopCmds.get(country):
-            logging.debug(cmd)
+            logger.debug(cmd)
             process = await asyncio.create_subprocess_shell(cmd)
             await process.wait()
         for cmd in startCmds.get(newCountry):
-            logging.debug(cmd)
+            logger.debug(cmd)
             process = await asyncio.create_subprocess_shell(cmd)
             await process.wait()
         country = newCountry
         if queue != None :
             queue.put_nowait("info/vpn:" + newCountry)
     else :
-        logging.warning("setVPN unknow newCountry")
+        logger.warning("setVPN unknow newCountry")
 
 async def getCountry():
     newCountry = ""      
@@ -73,13 +75,13 @@ async def getCountry():
                     if len(newCountry) == 3 :                         # normally text has 3 characters 
                         newCountry = newCountry.lower()[0:2]          # last one has to be cut away
                     else :
-                        logging.warning("unkown country " + newCountry)
+                        logger.warning("unkown country " + newCountry)
                         return "unknown"
                 else :
-                    logging.warning("HTTP return " + str(response.status))
+                    logger.warning("HTTP return " + str(response.status))
                     return "unknown"                
     except aiohttp.ClientError as e:
-        logging.ERROR(f"HTTP error {e}")
+        logger.error(f"HTTP error {e}")
         return "unknown"
     return newCountry
 
@@ -90,7 +92,7 @@ async def startSensor(queue, interval) :
         try: 
             queue.put_nowait("tele/vpn:" + ctr)
         except Exception as e:
-            logging.warning("Queue Error %s", e)
+            logger.warning("Queue Error %s", e)
         await asyncio.sleep(interval * 60)
 
 interval = 1
