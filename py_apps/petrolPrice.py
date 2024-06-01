@@ -66,13 +66,15 @@ async def startSensor(stationID, queue, interval) :
 
 petrolStationID = '56417'  # Globus Hattersheim
 
-async def main():
+async def start():
     while True :
         aQueue = asyncio.Queue()
         async with asyncio.TaskGroup() as tg:
             tg.create_task(publish(aQueue))
             tg.create_task(startSensor(petrolStationID, aQueue, 1))
 
-    
+def main():
+    asyncio.run(start())
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

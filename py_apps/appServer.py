@@ -1,7 +1,9 @@
-import rainradar
-import petrolPrice
-import serial2mqtt
-import vpnCtrl
+import py_apps
+from py_apps import rainRadar
+from py_apps import petrolPrice
+from py_apps import vpnCtrl
+from py_apps import serial2mqtt
+from systemd import journal
 import asyncio
 import aiomqtt
 import logging
@@ -12,22 +14,19 @@ logFormat = ('[%(asctime)s] %(levelname)-8s %(filename)-12s %(message)s')
 
 #logger = logging.getLogger(__name__)
 logging.basicConfig(
-    filename=logFile,
+#    filename=logFile,
     level=logLevel,
-#    handlers=[journal.JournaldLogHandler()],
+    handlers=[journal.JournaldLogHandler()],
     format=logFormat)
 
-#broker = "192.168.10.10"
-broker = "localhost"
-rainLocation = ''
-#rainLocation = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
-petrolStationID = ''
-#petrolStationID = '56417'  # Globus Hattersheim
-#serialTopic =""
-serialTopic ="cmnd/radio/#"
-
-async def sendTest(txt) :
-    print("Test :" + txt)
+broker = "192.168.10.10"
+#broker = "localhost"
+#rainLocation = ''
+rainLocation = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
+#petrolStationID = ''
+petrolStationID = '56417'  # Globus Hattersheim
+serialTopic =""
+#serialTopic ="cmnd/radio/#"
 
 async def distributeMqtt(mClient) :
     logging.info("distributing MQTT")
@@ -44,17 +43,15 @@ async def publishMqtt(queue,mClient) :
         await mClient.publish(m[0], payload=m[1])
         logging.debug("publishing: " + msg)
 
-async def publishPrnt(queue) :
+async def publishPrnt(queue) :              # for test purpose
     logging.info("publishing print")
     while True:
         print("publish: " + await queue.get())
 
 
-subscriptions = {"myApp/#" : sendTest ,
-                 "cmnd/vpn/set" : vpnCtrl.setCountry,
+subscriptions = {"cmnd/vpn/set" : vpnCtrl.setVPN,
                  "cmnd/radio/#" : serial2mqtt.sendMsg}
-
-async def main():
+async def start():
     while True :
         aQueue = asyncio.Queue()
         async with aiomqtt.Client(broker) as client:
@@ -62,7 +59,7 @@ async def main():
                 tg.create_task(publishMqtt(aQueue, client))
 #                tg.create_task(publishPrnt(aQueue))
                 if rainLocation != "" :
-                    tg.create_task(rainradar.startSensor(rainLocation, aQueue, 5))
+                    tg.create_task(rainRadar.startSensor(rainLocation, aQueue, 5))
                 if petrolStationID != "" :
                     tg.create_task(petrolPrice.startSensor(petrolStationID, aQueue, 5))
                 if serialTopic != "" :
@@ -70,6 +67,9 @@ async def main():
                 for key in subscriptions :
                     await client.subscribe(key)
                 tg.create_task(distributeMqtt(client))
-    
+
+def main():
+    asyncio.run(start())
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

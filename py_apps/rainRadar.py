@@ -3,22 +3,22 @@ import aiohttp
 import time
 import logging
 
-logLevel = logging.DEBUG
-logFile = 'myApp.log'
-logFormat = ('[%(asctime)s] %(levelname)-8s %(filename)-12s %(message)s')
+#logLevel = logging.DEBUG
+#logFile = 'myApp.log'
+#logFormat = ('[%(asctime)s] %(levelname)-8s %(filename)-12s %(message)s')
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename=logFile,
-    level=logLevel,
+#logger = logging.getLogger(__name__)
+#logging.basicConfig(
+#    filename=logFile,
+#    level=logLevel,
 #    handlers=[journal.JournaldLogHandler()],
-    format=logFormat)
+#    format=logFormat)
 
 async def publish(queue):
     while True:
         message = await queue.get()
-        print()
-        logging.info("publishing: " + message)
+        print("publishing: " + message)
+#        logging.info("publishing: " + message)
 
 rainstate = 0
 
@@ -119,13 +119,15 @@ async def startSensor(location, queue, interval) :
 
 interval = 1
 location = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
-async def main():
+async def start():
     while True :
         aQueue = asyncio.Queue()
         async with asyncio.TaskGroup() as tg:
             tg.create_task(startSensor(location, aQueue, interval))
             tg.create_task(publish(aQueue))
 
-    
+def main():
+    asyncio.run(start())
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

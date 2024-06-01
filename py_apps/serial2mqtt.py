@@ -63,14 +63,16 @@ async def startSerial(queue) :
                 await asyncio.sleep(5)
 
 serialPorts= ["/dev/ttyACM0","/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyUSB2","/dev/ttyACM0","/dev/ttyACM1","/dev/ttyACM2"]
-async def main():
+async def start():
     while True :
         aQueue = asyncio.Queue()
         async with asyncio.TaskGroup() as tg:
-            tg.create_task(heartbeat())
+#            tg.create_task(heartbeat())
             tg.create_task(publisher(aQueue))
             tg.create_task(startSerial(aQueue))
 
-    
+def main():
+    asyncio.run(start())
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
