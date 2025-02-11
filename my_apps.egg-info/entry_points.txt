@@ -1,0 +1,5 @@
+[console_scripts]
+mVpnCtrl = py_apps.mVpnCtrl:main
+myPetrolPrice = py_apps.petrolPrice:main
+myRainRadar = py_apps.rainRadar:main
+myServer = py_apps.appServer:main

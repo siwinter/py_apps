@@ -1,15 +1,23 @@
 import asyncio
 import aiohttp
+import aiomqtt
 import time
 import logging
 
 logger = logging.getLogger(__name__)
 
-async def publish(queue):
+interval = 5                                    # call webpage every 5 minutes
+broker = "192.168.20.10"                        # Adresse des MQTT Brokers
+location = '/deutschland/niederkruechten/kapelle/DE3205889.html'
+#location = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
+
+async def publish(queue, client):
     while True:
         message = await queue.get()
-        print("publishing: " + message)
-#        logger.info("publishing: " + message)
+        m = message.split(":",1)
+        await client.publish(m[0], payload=m[1])
+
+        logger.debug("publishing: " + message)
 
 rainstate = 0
 
@@ -103,19 +111,18 @@ async def startSensor(location, queue, interval) :
     while True :
         msg = await rainChecker(location)
         try: 
-            queue.put_nowait("tele/rainalarm:" + msg)
+            queue.put_nowait("inf/rainAlarm:" + msg)
         except Exception as e:
             logger.warning("Queue Error %s", e)
         await asyncio.sleep(interval * 60)
 
-interval = 1
-location = '/deutschland/hattersheim-am-main/hattersheim/DE0004242.html'
 async def start():
-    while True :
-        aQueue = asyncio.Queue()
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(startSensor(location, aQueue, interval))
-            tg.create_task(publish(aQueue))
+    async with aiomqtt.Client(broker) as mqttClient:
+        while True :
+            aQueue = asyncio.Queue()
+            async with asyncio.TaskGroup() as tg:
+                tg.create_task(startSensor(location, aQueue, interval))
+                tg.create_task(publish(aQueue, mqttClient))
 
 def main():
     asyncio.run(start())

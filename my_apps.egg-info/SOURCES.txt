@@ -1,0 +1,16 @@
+LICENCE
+README.md
+pyproject.toml
+my_apps.egg-info/PKG-INFO
+my_apps.egg-info/SOURCES.txt
+my_apps.egg-info/dependency_links.txt
+my_apps.egg-info/entry_points.txt
+my_apps.egg-info/requires.txt
+my_apps.egg-info/top_level.txt
+py_apps/appServer.py
+py_apps/certServer.py
+py_apps/petrolPrice.py
+py_apps/rainRadar.py
+py_apps/serial2mqtt.py
+py_apps/vpnCtrl.py
+py_apps/webInfo.py

@@ -1,0 +1,13 @@
+asyncio
+aiohttp
+aiomqtt
+aioserial
+aiosignal
+attrs
+frozenlist
+idna
+multidict
+paho-mqtt
+pyserial
+systemd
+yarl
